@@ -27,8 +27,8 @@ def read_folder():
         print("File not selected, closing application.")
         exit()
         
-def recursive_upscale(folder_path, scale_factor):
-    print("Upscaling frames...")
+def recursive_upscale(folder_path, scale_factor, interpolation):
+    print(f"Upscaling frames using {interpolation} algorithm...")
     output_name = f"upscaled_{Path(folder_path).name}"
     os.makedirs(output_name,exist_ok=True)
     frame_count = 0
@@ -37,10 +37,27 @@ def recursive_upscale(folder_path, scale_factor):
             height, width = image.shape[:2]
             new_height = int(height * scale_factor)
             new_width = int(width * scale_factor)
-
-            upscaled = cv2.resize(src=image,
-                                dsize=(new_width, new_height),
-                                interpolation=cv2.INTER_LANCZOS4)
+            
+            if interpolation == "INTER_NEAREST":
+                upscaled = cv2.resize(src=image,
+                                    dsize=(new_width, new_height),
+                                    interpolation=cv2.INTER_NEAREST)
+            if interpolation == "INTER_LINEAR":            
+                upscaled = cv2.resize(src=image,
+                                    dsize=(new_width, new_height),
+                                    interpolation=cv2.INTER_LINEAR)
+            if interpolation == "INTER_CUBIC":
+                upscaled = cv2.resize(src=image,
+                                    dsize=(new_width, new_height),
+                                    interpolation=cv2.INTER_CUBIC)
+            if interpolation == "INTER_AREA":
+                upscaled = cv2.resize(src=image,
+                                    dsize=(new_width, new_height),
+                                    interpolation=cv2.INTER_AREA)
+            if interpolation == "INTER_LANCZOS4":
+                upscaled = cv2.resize(src=image,
+                                    dsize=(new_width, new_height),
+                                    interpolation=cv2.INTER_LANCZOS4)                
             
             cv2.imwrite(f"upscaled_{Path(folder_path).name}/upscaled_frame_{frame_count:04d}.jpg", upscaled)
             frame_count += 1

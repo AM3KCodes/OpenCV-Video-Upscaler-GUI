@@ -21,8 +21,8 @@ import threading
 def window():
     root = ThemedTk(theme="adapta")
     root.title('OpenCV Video Upscaler')
-    root.geometry('500x350')
-    root.resizable = (False, False)
+    root.geometry('750x400')
+    root.resizable(False, False)
 
     style = ttk.Style(root)
     
@@ -59,7 +59,9 @@ def window():
             
             fps_label.pack(side='top')
             fps_entry.pack(side='top')
-            confirm_button.pack(side='top')            
+            option_label.pack(side='top')
+            option_menu.pack(side='top')
+            confirm_button.pack(side='top')
                         
         if file_path == None:
             file_selected_label.configure(text="No file was selected.")
@@ -72,11 +74,15 @@ def window():
             
             fps_label.pack_forget()
             fps_entry.pack_forget()
+            option_label.pack_forget()
+            option_menu.pack_forget()
             confirm_button.pack_forget()
+            status_label.pack_forget()
             
     def pipeline():
         sf = scale_factor.get()
         frame_rate = fps.get()
+        ia = option.get()
         
         if not selected_path:
             warning_label.configure(text="File not found. Try again.")
@@ -90,34 +96,47 @@ def window():
         warning_label.pack_forget()
 
         confirm_button.config(state="disabled")
-
+        if ia == "":
+            status_label.pack(side='top')
+            status_label.config(text="No interpolation algorithm was selected. Try again.")
+            confirm_button.config(state="normal")
+            return
+        
         thread = threading.Thread(
             target=run_pipeline,
-            args=(sf, frame_rate, selected_path),
+            args=(sf, frame_rate, ia, selected_path),
             daemon=True
         )
         thread.start()   
     
-    def run_pipeline(sf, frame_rate, path):
+    def run_pipeline(sf, frame_rate, ia, path):
         files = []
         folders = []
 
         try:
             frames = extract_frames(path)
+            root.after(0, lambda: status_label.config(text="Frames extracted..."))
 
             audio = extract_audio_file(path, Path(path).parent)
             files.append(audio)
+            root.after(0, lambda: status_label.config(text="Audio extracted..."))
 
             folder_to_upscale = f"{Path(frames).name}"
             folders.append(folder_to_upscale)
 
-            upscaled_frames_folder = recursive_upscale(folder_to_upscale, sf)
+            upscaled_frames_folder = recursive_upscale(folder_to_upscale, sf, ia)
             folders.append(upscaled_frames_folder)
+            root.after(0, lambda: status_label.config(text="Frames upscaled..."))
 
             video_clip = frames_to_video(path, frame_rate, upscaled_frames_folder)
             files.append(video_clip)
+            root.after(0, lambda: status_label.config(text="Video created..."))
 
             combine_clips(video_clip, audio, frame_rate)
+            root.after(0, lambda: status_label.config(text="Audio and video combined..."))
+
+            final_path = Path(video_clip).resolve()
+            root.after(0, lambda: status_label.config(text=f"File saved to {final_path}."))
 
         finally:
             cleanup_files(files)
@@ -134,6 +153,8 @@ def window():
     
     file_selected_label = ttk.Label(root, text="", style="Custom.TLabel", foreground="red")
 
+    status_label = ttk.Label(root, text="", style="Custom.TLabel")
+
     scale_factor = tk.IntVar()
     upscale_factor_label = ttk.Label(root, text="Upscale Factor:", style="Custom.TLabel")
     upscale_factor_entry = ttk.Entry(root, textvariable=scale_factor, width=5, style="ValueEntry.TEntry")
@@ -144,6 +165,12 @@ def window():
     
     warning_label = ttk.Label(root, text="FPS and/or upscale factor are negative or equal to 0. Please enter another value.", style="Custom.TLabel", foreground="red")
     
+
+    option = tk.StringVar(root)
+    options_list = ["INTER_NEAREST", "INTER_LINEAR", "INTER_CUBIC", "INTER_AREA", "INTER_LANCZOS4"]
+    option_label = ttk.Label(root, text="Interpolation Algorithm:", style="Custom.TLabel")
+    option_menu = ttk.Combobox(root, textvariable=option, values=options_list, state="readonly")
+
     confirm_button = ttk.Button(root, text="Upscale", command=pipeline)
 
     root.mainloop()

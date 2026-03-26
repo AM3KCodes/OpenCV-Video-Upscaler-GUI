@@ -15,3 +15,7 @@ def combine_clips(file_path, audio_path, fps):
     
     final_clip = video_clip.with_audio(audio_clip)
     final_clip.write_videofile(f"{Path(file_path).stem} with audio.mp4", fps, audio_codec="aac")
+
+    video_clip.close()
+    audio_clip.close()
+    final_clip.close()

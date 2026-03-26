@@ -8,8 +8,6 @@ Module for extracting frames from video, creates folder in local path for frames
 
 import cv2
 import os
-import tkinter as tk
-from tkinter import filedialog
 from pathlib import Path
 
 # DEPRECATED START
